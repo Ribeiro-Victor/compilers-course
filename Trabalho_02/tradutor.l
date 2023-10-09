@@ -17,6 +17,7 @@ void E_linha();
 void T_linha();
 void F();
 void S();
+void U();
 
 enum { tk_id = 256, tk_cte_int, tk_cte_real, tk_print, tk_string};
 
@@ -106,20 +107,28 @@ void E() {
 
 void E_linha() {
   switch( token ) {
-    case '+' : casa( '+' ); T(); print( "+"); E_linha(); break;
-    case '-' : casa( '-' ); T(); print( "-"); E_linha(); break;
+    case '+' : casa( '+' ); T(); print( "+" ); E_linha(); break;
+    case '-' : casa( '-' ); T(); print( "-" ); E_linha(); break;
   }
 }
 
 void T() {
-  F();
+  U();
   T_linha();
+}
+
+void U(){
+  switch( token ) {
+    case '+' : casa( '+' ); U(); break;
+    case '-' : print( "0" ); casa( '-' ); U(  ); print( "-" ); break;
+    default: F();
+  }
 }
 
 void T_linha() {
   switch( token ) {
-    case '*' : casa( '*' ); F(); print( "*"); T_linha(); break;
-    case '/' : casa( '/' ); F(); print( "/"); T_linha(); break;
+    case '*' : casa( '*' ); U(); print( "*"); T_linha(); break;
+    case '/' : casa( '/' ); U(); print( "/"); T_linha(); break;
   }
 }
 
