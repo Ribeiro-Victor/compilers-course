@@ -18,6 +18,10 @@ void T_linha();
 void F();
 void S();
 void U();
+void POT();
+void POT_linha();
+void FAT();
+void FAT_linha();
 
 enum { tk_id = 256, tk_cte_int, tk_cte_real, tk_print, tk_string};
 
@@ -117,18 +121,40 @@ void T() {
   T_linha();
 }
 
-void U(){
-  switch( token ) {
-    case '+' : casa( '+' ); U(); break;
-    case '-' : print( "0" ); casa( '-' ); U(  ); print( "-" ); break;
-    default: F();
-  }
-}
-
 void T_linha() {
   switch( token ) {
     case '*' : casa( '*' ); U(); print( "*"); T_linha(); break;
     case '/' : casa( '/' ); U(); print( "/"); T_linha(); break;
+  }
+}
+
+void U(){
+  switch( token ) {
+    case '+' : casa( '+' ); U(); break;
+    case '-' : print( "0" ); casa( '-' ); U(  ); print( "-" ); break;
+    default: POT();
+  }
+}
+
+void POT(){
+  FAT();
+  POT_linha();
+}
+
+void POT_linha(){
+  switch( token ){
+    case '^': casa( '^' ); POT(); print( "power #" ); break;
+  }
+}
+
+void FAT(){
+  F();
+  FAT_linha();
+}
+
+void FAT_linha(){
+  switch( token ){
+    case '!': casa( '!' ); FAT_linha(); print( "fat #" ); break;
   }
 }
 
