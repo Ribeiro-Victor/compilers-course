@@ -10,5 +10,5 @@ lex.yy.c: tradutor.l
 tradutor: lex.yy.c 
 	g++ lex.yy.c -o tradutor.out -ll  
 	
-# clean:
-# 	rm saida lex.yy.c
+clean:
+	rm tradutor.out lex.yy.c
