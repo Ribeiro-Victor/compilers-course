@@ -8,3 +8,5 @@ lex.yy.mdp.o: lex.yy.mdp.c
 lex.yy.mdp.c: mdp.l 
 	lex -o lex.yy.mdp.c mdp.l 
 	
+clean:
+	rm -f interpretador lex.yy.mdp.o lex.yy.mdp.c
