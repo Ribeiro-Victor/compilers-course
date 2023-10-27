@@ -7,6 +7,9 @@ LETRA	      [A-Za-z_]
 INT	        {DIGITO}+
 DOUBLE      {DIGITO}+"."{DIGITO}+([Ee][+\-]?{DIGITO}+)?
 ID          (_|{LETRA})({LETRA}|{DIGITO})*
+STRING_DB   ["](([^"]|\\\")*(\"\")?([^"]|\\\")*)["]
+STRING_SNG  ['](([^']|\\\')*(\'\')?([^']|\\\')*)[']
+STRING      ({STRING_SNG}|{STRING_DB})
 
 %%
 
@@ -16,6 +19,7 @@ ID          (_|{LETRA})({LETRA}|{DIGITO})*
 
 {INT}       { return token( CONST_INT ); }
 {DOUBLE}    { return token( CONST_DOUBLE ); }
+{STRING}    { return token( CONST_STRING ); }   
 
 "let"       { return token( LET ); }
 "const"     { return token( CONST ); }
@@ -31,7 +35,7 @@ ID          (_|{LETRA})({LETRA}|{DIGITO})*
 "<="        { return token( ME_IG ); }
 ">="        { return token( MA_IG ); }
 "!="        { return token( DIF ); }
-"=="        { return token( IGUAL ); }
+"=="        { return token( IGUAL ); }  
 "+="        { return token( MAIS_IGUAL ); }
 "-="        { return token( MENOS_IGUAL ); }
 "++"        { return token( MAIS_MAIS ); }
@@ -43,8 +47,7 @@ ID          (_|{LETRA})({LETRA}|{DIGITO})*
 %%
 
 int token( int tk ) {  
-  /* yylval.c = vector<string>{ yytext }; */
-  yylval.v = yytext;
+  yylval.c = vector<string>{ yytext };
   coluna += strlen( yytext );
   yylval.linha = linha;
   yylval.coluna = coluna;
