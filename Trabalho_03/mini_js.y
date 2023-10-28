@@ -96,9 +96,11 @@ CMDs : CMDs CMD  { $$.c = $1.c + $2.c; }
 CMD : CMD_LET ';'
     | CMD_IF
     | CMD_IF_ELSE
-    | PRINT E ';'   { $$.c = $2.c + "println" + "#"; }
+    | CMD_FOR
+    | PRINT E ';'   { $$.c = $2.c + "print" + "#"; }
     | E ';'         { $$.c = $1.c + "^"; }
     | '{' CMDs '}'  { $$.c = $2.c; }
+    | ';'           { $$.clear(); }
     ;
 
 CMD_IF : IF '(' E ')' CMD
@@ -129,12 +131,33 @@ CMD_IF_ELSE : IF '(' E ')' CMD ELSE CMD
                 }
             ;
 
+CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD 
+        { string lbl_fim_for = gera_label( "fim_for" );
+          string lbl_condicao_for = gera_label( "condicao_for" );
+          string lbl_comando_for = gera_label( "comando_for" );
+          string definicao_lbl_fim_for = ":" + lbl_fim_for;
+          string definicao_lbl_condicao_for = ":" + lbl_condicao_for;
+          string definicao_lbl_comando_for = ":" + lbl_comando_for;
+          
+          $$.c = $3.c + definicao_lbl_condicao_for +
+                 $5.c + lbl_comando_for + "?" + lbl_fim_for + "#" +
+                 definicao_lbl_comando_for + $9.c + 
+                 $7.c + "^" + lbl_condicao_for + "#" +
+                 definicao_lbl_fim_for;
+        }
+        ;
+
+PRIM_E : CMD_LET 
+       | E  
+         { $$.c = $1.c + "^"; }
+       ;
+
 CMD_LET : LET LET_VARs { $$.c = $2.c; }
         ;
 
 LET_VARs : LET_VAR ',' LET_VARs { $$.c = $1.c + $3.c; } 
-     |     LET_VAR
-     ;
+         | LET_VAR
+         ;
 
 LET_VAR : ID  
             { $$.c = $1.c + "&"; }
@@ -149,27 +172,40 @@ LET_VAR : ID
 LVALUE : ID 
        ;
 
-E : LVALUE '=' E 
+LVALUEPROP : E '[' E ']'    { $$.c = $1.c + $3.c; }
+           | E '.' ID       { $$.c = $1.c + $3.c; }
+           ;
+
+E :   LVALUE '=' E 
         {  $$.c = $1.c + $3.c + "="; }
-  | E '<' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E '>' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E '+' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E '-' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E '*' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E '/' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E '%' E     { $$.c = $1.c + $3.c + $2.c; }
-  | E IGUAL E   { $$.c = $1.c + $3.c + $2.c; }
-  | '(' E ')'   { $$.c = $2.c; }
-  | LVALUE MAIS_MAIS
-        { $$.c = $1.c + $1.c + "@" + "1" + "+" + "="; }
-  | LVALUE MAIS_IGUAL E 
-        { $$.c = $1.c + $1.c + "@" + $3.c + "+" + "=" ; }
-  | CONST_INT
-  | CONST_DOUBLE
-  | CONST_STRING
-  | LVALUE 
-    { $$.c = $1.c + "@"; } 
- ;
+    | LVALUEPROP '=' E 
+        {  $$.c = $1.c + $3.c + "[=]"; }
+    | E '<' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E '>' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E '+' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E '-' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E '*' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E '/' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E '%' E       { $$.c = $1.c + $3.c + $2.c; }
+    | E IGUAL E     { $$.c = $1.c + $3.c + $2.c; }
+    | '(' E ')'     { $$.c = $2.c; }
+    | '[' ']'       { $$.c = vector<string>{"[]"}; }
+    | LVALUE MAIS_MAIS
+            { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }
+    | LVALUE MAIS_IGUAL E 
+            { $$.c = $1.c + $1.c + "@" + $3.c + "+" + "=" ; }
+    | LVALUEPROP MAIS_IGUAL E 
+            { $$.c = $1.c + $1.c + "[@]" + $3.c + "+" + "[=]" ; }
+    | CONST_INT
+    | CONST_DOUBLE
+    | CONST_STRING
+    | '-' CONST_INT     { $$.c = "0" + $2.c + $1.c; }
+    | '-' CONST_DOUBLE  { $$.c = "0" + $2.c + $1.c; }
+    | LVALUE 
+        { $$.c = $1.c + "@"; }
+    | LVALUEPROP 
+        { $$.c = $1.c + "[@]"; } 
+    ;
 
 
 %%
