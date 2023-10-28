@@ -74,7 +74,7 @@ string gera_label( string prefixo ) {
 %token ID IF ELSE LET VAR CONST PRINT FOR WHILE
 %token CONST_INT CONST_DOUBLE CONST_STRING
 %token AND OR ME_IG MA_IG DIF IGUAL
-%token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS
+%token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
 
 %right '='
 %nonassoc '<' '>'
@@ -205,23 +205,40 @@ E :   LVALUE '=' E
     | E '/' E       { $$.c = $1.c + $3.c + $2.c; }
     | E '%' E       { $$.c = $1.c + $3.c + $2.c; }
     | E IGUAL E     { $$.c = $1.c + $3.c + $2.c; }
+    | E ME_IG E     { $$.c = $1.c + $3.c + $2.c; }
+    | E MA_IG E     { $$.c = $1.c + $3.c + $2.c; }
+    | E DIF E       { $$.c = $1.c + $3.c + $2.c; }
+    | E AND E       { $$.c = $1.c + $3.c + $2.c; }
+    | E OR E        { $$.c = $1.c + $3.c + $2.c; }
     | '(' E ')'     { $$.c = $2.c; }
     | '[' ']'       { $$.c = vector<string>{"[]"}; }
     | LVALUE MAIS_MAIS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }
+    | LVALUE MENOS_MENOS
+            { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "-" + "=" + "^"; }
     | LVALUE MAIS_IGUAL E 
             { $$.c = $1.c + $1.c + "@" + $3.c + "+" + "=" ; }
+    | LVALUE MENOS_IGUAL E 
+            { $$.c = $1.c + $1.c + "@" + $3.c + "-" + "=" ; }
+    | LVALUEPROP MAIS_MAIS
+            { $$.c = $1.c + "[@]" + $1.c + $1.c + "[@]" + "1" + "+" + "[=]" + "^"; }
+    | LVALUEPROP MENOS_MENOS
+            { $$.c = $1.c + "[@]" + $1.c + $1.c + "[@]" + "1" + "-" + "[=]" + "^"; }
     | LVALUEPROP MAIS_IGUAL E 
             { $$.c = $1.c + $1.c + "[@]" + $3.c + "+" + "[=]" ; }
-    | CONST_INT
-    | CONST_DOUBLE
-    | CONST_STRING
-    | '-' CONST_INT     { $$.c = "0" + $2.c + $1.c; }
-    | '-' CONST_DOUBLE  { $$.c = "0" + $2.c + $1.c; }
+    | LVALUEPROP MENOS_IGUAL E 
+            { $$.c = $1.c + $1.c + "[@]" + $3.c + "-" + "[=]" ; }
     | LVALUE 
         { $$.c = $1.c + "@"; }
     | LVALUEPROP 
-        { $$.c = $1.c + "[@]"; } 
+        { $$.c = $1.c + "[@]"; }
+    | '-' T         { $$.c = "0" + $2.c + $1.c; }
+    | T
+    ;
+
+T   : CONST_INT
+    | CONST_DOUBLE
+    | CONST_STRING
     ;
 
 

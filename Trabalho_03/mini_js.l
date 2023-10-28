@@ -39,6 +39,7 @@ STRING      ({STRING_SNG}|{STRING_DB})
 "+="        { return token( MAIS_IGUAL ); }
 "-="        { return token( MENOS_IGUAL ); }
 "++"        { return token( MAIS_MAIS ); }
+"--"        { return token( MENOS_MENOS ); }
 
 {ID}        { return token( ID ); }
 
