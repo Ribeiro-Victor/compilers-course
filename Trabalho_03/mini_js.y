@@ -97,6 +97,7 @@ CMD : CMD_LET ';'
     | CMD_IF
     | CMD_IF_ELSE
     | CMD_FOR
+    | CMD_WHILE
     | PRINT E ';'   { $$.c = $2.c + "print" + "#"; }
     | E ';'         { $$.c = $1.c + "^"; }
     | '{' CMDs '}'  { $$.c = $2.c; }
@@ -146,6 +147,22 @@ CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD
                  definicao_lbl_fim_for;
         }
         ;
+
+CMD_WHILE : WHILE '(' E ')' CMD
+            {   string lbl_fim_while = gera_label( "fim_while" );
+                string lbl_condicao_while = gera_label( "condicao_while" );
+                string lbl_comando_while = gera_label( "comando_while" );
+                string definicao_lbl_fim_while = ":" + lbl_fim_while;
+                string definicao_lbl_condicao_while = ":" + lbl_condicao_while;
+                string definicao_lbl_comando_while = ":" + lbl_comando_while;
+                
+                $$.c =  definicao_lbl_condicao_while +
+                        $3.c + lbl_comando_while + "?" + lbl_fim_while + "#" +
+                        definicao_lbl_comando_while + $5.c + 
+                        lbl_condicao_while + "#" +
+                        definicao_lbl_fim_while;
+            }
+          ;
 
 PRIM_E : CMD_LET 
        | E  
