@@ -79,8 +79,6 @@ string gera_label( string prefixo ) {
     return prefixo + "_" + to_string( ++n ) + ":";
 }
 
-
-
 %}
 
 %token ID IF ELSE LET VAR CONST PRINT FOR WHILE
@@ -89,10 +87,13 @@ string gera_label( string prefixo ) {
 %token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
 
 %right '='
-%nonassoc '<' '>'
+%right ELSE ')'
+
+%nonassoc '<' '>' ME_IG MA_IG DIF IGUAL AND OR
+%nonassoc MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
+
 %left '+' '-'
 %left '*' '/' '%'
-
 %left '['
 %left '.'
 
@@ -147,19 +148,19 @@ CMD_IF_ELSE : IF '(' E ')' CMD ELSE CMD
             ;
 
 CMD_FOR : FOR '(' PRIM_E ';' E ';' E ')' CMD 
-        { string lbl_fim_for = gera_label( "fim_for" );
-          string lbl_condicao_for = gera_label( "condicao_for" );
-          string lbl_comando_for = gera_label( "comando_for" );
-          string definicao_lbl_fim_for = ":" + lbl_fim_for;
-          string definicao_lbl_condicao_for = ":" + lbl_condicao_for;
-          string definicao_lbl_comando_for = ":" + lbl_comando_for;
-          
-          $$.c = $3.c + definicao_lbl_condicao_for +
-                 $5.c + lbl_comando_for + "?" + lbl_fim_for + "#" +
-                 definicao_lbl_comando_for + $9.c + 
-                 $7.c + "^" + lbl_condicao_for + "#" +
-                 definicao_lbl_fim_for;
-        }
+            { string lbl_fim_for = gera_label( "fim_for" );
+            string lbl_condicao_for = gera_label( "condicao_for" );
+            string lbl_comando_for = gera_label( "comando_for" );
+            string definicao_lbl_fim_for = ":" + lbl_fim_for;
+            string definicao_lbl_condicao_for = ":" + lbl_condicao_for;
+            string definicao_lbl_comando_for = ":" + lbl_comando_for;
+            
+            $$.c = $3.c + definicao_lbl_condicao_for +
+                    $5.c + lbl_comando_for + "?" + lbl_fim_for + "#" +
+                    definicao_lbl_comando_for + $9.c + 
+                    $7.c + "^" + lbl_condicao_for + "#" +
+                    definicao_lbl_fim_for;
+            }
         ;
 
 CMD_WHILE : WHILE '(' E ')' CMD
@@ -181,8 +182,7 @@ CMD_WHILE : WHILE '(' E ')' CMD
 PRIM_E : CMD_LET 
        | CMD_VAR
        | CMD_CONST
-       | E  
-         { $$.c = $1.c + "^"; }
+       | E  { $$.c = $1.c + "^"; }
        ;
 
 CMD_LET : LET LET_VARs { $$.c = $2.c; }
@@ -200,9 +200,6 @@ LET_VAR : ID
         | ID '=' '{' '}'
             { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) +
                      $1.c + "{}" + "=" + "^"; }
-        | ID '=' '[' ']'
-            { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) +
-                     $1.c + "[]" + "=" + "^"; }
         ;
 
 CMD_VAR : VAR VAR_VARs { $$.c = $2.c; }
@@ -220,29 +217,23 @@ VAR_VAR : ID
         | ID '=' '{' '}'
             { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) +
                      $1.c + "{}" + "=" + "^"; }
-        | ID '=' '[' ']'
-            { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) +
-                     $1.c + "[]" + "=" + "^"; }
         ;
 
-CMD_CONST : CONST CONST_VARs { $$.c = $2.c; }
-        ;
+CMD_CONST   : CONST CONST_VARs { $$.c = $2.c; }
+            ;
 
-CONST_VARs : CONST_VAR ',' CONST_VARs { $$.c = $1.c + $3.c; } 
-         | CONST_VAR
-         ;
+CONST_VARs  : CONST_VAR ',' CONST_VARs { $$.c = $1.c + $3.c; } 
+            | CONST_VAR
+            ;
 
-CONST_VAR : 
-        | ID '=' E
-            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) + 
-                     $1.c + $3.c + "=" + "^"; }
-        | ID '=' '{' '}'
-            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
-                     $1.c + "{}" + "=" + "^"; }
-        | ID '=' '[' ']'
-            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
-                     $1.c + "[]" + "=" + "^"; }
-        ;
+CONST_VAR   : 
+            | ID '=' E
+                { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) + 
+                        $1.c + $3.c + "=" + "^"; }
+            | ID '=' '{' '}'
+                { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
+                        $1.c + "{}" + "=" + "^"; }
+            ;
 
 
 LVALUE : ID 
@@ -338,9 +329,9 @@ void checa_simbolo( string nome, bool modificavel ) {
 }
 
 void yyerror( const char* st ) {
-   puts( st ); 
-   printf( "Proximo a: %s\n", yytext );
-   exit( 0 );
+    puts( st ); 
+    printf( "Proximo a: %s\n", yytext );
+    exit( 0 );
 }
 
 void print( vector<string> codigo ) {
@@ -350,6 +341,6 @@ void print( vector<string> codigo ) {
 }
 
 int main( int argc, char* argv[] ) {
-  yyparse();
-  return 0;
+    yyparse();
+    return 0;
 }

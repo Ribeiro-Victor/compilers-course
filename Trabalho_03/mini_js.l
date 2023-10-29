@@ -48,9 +48,9 @@ STRING      ({STRING_SNG}|{STRING_DB})
 %%
 
 int token( int tk ) {  
-  yylval.c = vector<string>{ yytext };
-  coluna += strlen( yytext );
-  yylval.linha = linha;
-  yylval.coluna = coluna;
-  return tk;
+    yylval.c = vector<string>{ yytext };
+    coluna += strlen( yytext );
+    yylval.linha = linha;
+    yylval.coluna = coluna;
+    return tk;
 }
