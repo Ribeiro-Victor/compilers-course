@@ -12,7 +12,6 @@ void print( vector<string> s );
 int linha = 1, coluna = 1; 
 
 struct Atributos {
-//   string v;
     vector<string> c; // Código
     int linha = 0, coluna = 0;
     void clear() {
@@ -21,6 +20,19 @@ struct Atributos {
         coluna = 0;
     }
 };
+
+enum TipoDecl { Let = 1, Const, Var };
+
+struct Simbolo {
+    TipoDecl tipo;
+    int linha;
+    int coluna;
+};
+
+map< string, Simbolo > ts; // Tabela de símbolos
+
+vector<string> declara_var( TipoDecl tipo, string nome, int linha, int coluna );
+void checa_simbolo( string nome, bool modificavel );
 
 // Tipo dos atributos: YYSTYPE é o tipo usado para os atributos.
 #define YYSTYPE Atributos
@@ -93,7 +105,9 @@ CMDs : CMDs CMD  { $$.c = $1.c + $2.c; }
      |           { $$.clear(); }
      ;
 
-CMD : CMD_LET ';'
+CMD : CMD_LET   ';'
+    | CMD_VAR   ';'
+    | CMD_CONST ';'
     | CMD_IF
     | CMD_IF_ELSE
     | CMD_FOR
@@ -165,6 +179,8 @@ CMD_WHILE : WHILE '(' E ')' CMD
           ;
 
 PRIM_E : CMD_LET 
+       | CMD_VAR
+       | CMD_CONST
        | E  
          { $$.c = $1.c + "^"; }
        ;
@@ -177,14 +193,57 @@ LET_VARs : LET_VAR ',' LET_VARs { $$.c = $1.c + $3.c; }
          ;
 
 LET_VAR : ID  
-            { $$.c = $1.c + "&"; }
+            { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ); }
         | ID '=' E
-            { $$.c = $1.c + "&" + $1.c + $3.c + "=" + "^"; }
+            { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) + 
+                     $1.c + $3.c + "=" + "^"; }
         | ID '=' '{' '}'
-            { $$.c = $1.c + "&" + $1.c + "{}" + "=" + "^"; }
+            { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + "{}" + "=" + "^"; }
         | ID '=' '[' ']'
-            { $$.c = $1.c + "&" + $1.c + "[]" + "=" + "^"; }
-    ;
+            { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + "[]" + "=" + "^"; }
+        ;
+
+CMD_VAR : VAR VAR_VARs { $$.c = $2.c; }
+        ;
+
+VAR_VARs : VAR_VAR ',' VAR_VARs { $$.c = $1.c + $3.c; } 
+         | VAR_VAR
+         ;
+
+VAR_VAR : ID  
+            { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ); }
+        | ID '=' E
+            { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) + 
+                     $1.c + $3.c + "=" + "^"; }
+        | ID '=' '{' '}'
+            { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + "{}" + "=" + "^"; }
+        | ID '=' '[' ']'
+            { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + "[]" + "=" + "^"; }
+        ;
+
+CMD_CONST : CONST CONST_VARs { $$.c = $2.c; }
+        ;
+
+CONST_VARs : CONST_VAR ',' CONST_VARs { $$.c = $1.c + $3.c; } 
+         | CONST_VAR
+         ;
+
+CONST_VAR : 
+        | ID '=' E
+            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) + 
+                     $1.c + $3.c + "=" + "^"; }
+        | ID '=' '{' '}'
+            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + "{}" + "=" + "^"; }
+        | ID '=' '[' ']'
+            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + "[]" + "=" + "^"; }
+        ;
+
 
 LVALUE : ID 
        ;
@@ -194,7 +253,9 @@ LVALUEPROP : E '[' E ']'    { $$.c = $1.c + $3.c; }
            ;
 
 E :   LVALUE '=' E 
-        {  $$.c = $1.c + $3.c + "="; }
+        { checa_simbolo( $1.c[0], true ); $$.c = $1.c + $3.c + "="; }
+    | LVALUE '=' '{' '}'
+        { checa_simbolo( $1.c[0], true ); $$.c = $1.c + "{}" + "="; }
     | LVALUEPROP '=' E 
         {  $$.c = $1.c + $3.c + "[=]"; }
     | E '<' E       { $$.c = $1.c + $3.c + $2.c; }
@@ -245,6 +306,36 @@ T   : CONST_INT
 %%
 
 #include "lex.yy.c"
+
+vector<string> declara_var( TipoDecl tipo, string nome, int linha, int coluna ) {
+        
+    if( ts.count( nome ) == 0 ) {
+        ts[nome] = Simbolo{ tipo, linha, coluna };
+        return vector<string>{ nome, "&" };
+    }
+    else if( tipo == Var && ts[nome].tipo == Var ) {
+        ts[nome] = Simbolo{ tipo, linha, coluna };
+        return vector<string>{};
+    } 
+    else {
+        cerr << "Erro: a variável '" << nome << "' ja foi declarada na linha " << ts[nome].linha 
+            << "." << endl;
+        exit( 1 );     
+    }
+}
+
+void checa_simbolo( string nome, bool modificavel ) {
+    if( ts.count( nome ) > 0 ) {
+        if( modificavel && ts[nome].tipo == Const ) {
+        cerr << "Erro: a variável '" << nome << "' não pode ser modificada." << endl;
+        exit( 1 );     
+        }
+    }
+    else {
+        cerr << "Erro: a variável '" << nome << "' não foi declarada." << endl;
+        exit( 1 );     
+    }
+}
 
 void yyerror( const char* st ) {
    puts( st ); 
