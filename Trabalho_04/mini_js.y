@@ -1,5 +1,6 @@
 %{
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <map>
@@ -22,14 +23,21 @@ struct Atributos {
 };
 
 enum TipoDecl { Let = 1, Const, Var };
+map<TipoDecl, string> nomeTipoDecl = { 
+  { Let, "let" }, 
+  { Const, "const" }, 
+  { Var, "var" }
+};
 
 struct Simbolo {
     TipoDecl tipo;
     int linha;
     int coluna;
+    int n_args;
 };
 
-map< string, Simbolo > ts; // Tabela de símbolos
+vector< map< string, Simbolo > > ts = { map< string, Simbolo >{} }; // Tabela de símbolos 
+vector<string> funcoes;
 
 vector<string> declara_var( TipoDecl tipo, string nome, int linha, int coluna );
 void checa_simbolo( string nome, bool modificavel );
@@ -83,7 +91,7 @@ string gera_label( string prefixo ) {
 
 %token ID IF ELSE LET VAR CONST PRINT FOR WHILE
 %token CONST_INT CONST_DOUBLE CONST_STRING
-%token AND OR ME_IG MA_IG DIF IGUAL
+%token AND OR ME_IG MA_IG DIF IGUAL FUNCTION ASM
 %token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
 
 %right '='
@@ -113,9 +121,14 @@ CMD : CMD_LET   ';'
     | CMD_IF_ELSE
     | CMD_FOR
     | CMD_WHILE
+    | CMD_FUNC
+    | E ASM ';' 	{ $$.c = $1.c + $2.c; }
     | PRINT E ';'   { $$.c = $2.c + "print" + "#"; }
     | E ';'         { $$.c = $1.c + "^"; }
-    | '{' CMDs '}'  { $$.c = $2.c; }
+    | '{' EMPILHA_TS CMDs '}'  
+        {   ts.pop_back();
+            $$.c = "<{" + $3.c + "}>"; 
+        }
     | ';'           { $$.clear(); }
     ;
 
@@ -184,6 +197,37 @@ PRIM_E : CMD_LET
        | CMD_CONST
        | E  { $$.c = $1.c + "^"; }
        ;
+
+EMPILHA_TS : { ts.push_back( map< string, Simbolo >{} ); } 
+           ;
+    
+CMD_FUNC : FUNCTION ID { declara_var( Var, $2.c[0], $2.linha, $2.coluna ); } 
+             '(' EMPILHA_TS LISTA_ARGs ')' '{' CMDs '}'
+           { 
+             string lbl_endereco_funcao = gera_label( "func_" + $2.c[0] );
+             string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+             
+             $$.c = $2.c + "&" + $2.c + "{}"  + "=" + "'&funcao'" +
+                    lbl_endereco_funcao + "[=]" + "^";
+             funcoes = funcoes + definicao_lbl_endereco_funcao + $6.c + $9.c +
+                       "undefined" + "@" + "'&retorno'" + "@"+ "~";
+             ts.pop_back(); 
+           }
+         ;
+         
+LISTA_ARGs : ARGs
+           | { $$.c.clear(); }
+           ;
+           
+ARGs : ARG ',' ARGs 
+     | ARG 
+     ;
+     
+ARG : ID
+    | ID '=' E
+    ;
+
+
 
 CMD_LET : LET LET_VARs { $$.c = $2.c; }
         ;
@@ -300,32 +344,40 @@ T   : CONST_INT
 
 vector<string> declara_var( TipoDecl tipo, string nome, int linha, int coluna ) {
         
-    if( ts.count( nome ) == 0 ) {
-        ts[nome] = Simbolo{ tipo, linha, coluna };
+    auto& topo = ts.back();    
+
+    if( topo.count( nome ) == 0 ) {
+        topo[nome] = Simbolo{ tipo, linha, coluna };
         return vector<string>{ nome, "&" };
     }
-    else if( tipo == Var && ts[nome].tipo == Var ) {
-        ts[nome] = Simbolo{ tipo, linha, coluna };
+    else if( tipo == Var && topo[nome].tipo == Var ) {
+        topo[nome] = Simbolo{ tipo, linha, coluna };
         return vector<string>{};
     } 
     else {
-        cerr << "Erro: a variável '" << nome << "' ja foi declarada na linha " << ts[nome].linha 
+        cerr << "Erro: a variável '" << nome << "' já foi declarada na linha " << topo[nome].linha 
             << "." << endl;
         exit( 1 );     
     }
 }
 
 void checa_simbolo( string nome, bool modificavel ) {
-    if( ts.count( nome ) > 0 ) {
-        if( modificavel && ts[nome].tipo == Const ) {
-        cerr << "Erro: a variável '" << nome << "' não pode ser modificada." << endl;
-        exit( 1 );     
+
+    for( int i = ts.size() - 1; i >= 0; i-- ) {  
+        auto& atual = ts[i];
+
+        if( atual.count( nome ) > 0 ) {
+            if( modificavel && atual[nome].tipo == Const ) {
+            cerr << "Erro: a variável '" << nome << "' não pode ser modificada." << endl;
+            exit( 1 );     
+            }
+        }
+        else {
+            return;   
         }
     }
-    else {
-        cerr << "Erro: a variável '" << nome << "' não foi declarada." << endl;
-        exit( 1 );     
-    }
+    cerr << "Erro: a variável '" << nome << "' não foi declarada." << endl;
+    exit( 1 );  
 }
 
 void yyerror( const char* st ) {

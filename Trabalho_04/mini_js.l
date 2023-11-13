@@ -1,5 +1,7 @@
 %{
     int token( int tk );
+    string trim( char*, string);
+    vector<string> tokeniza(string);
 %}
 
 DIGITO      [0-9]
@@ -21,6 +23,13 @@ STRING      ({STRING_SNG}|{STRING_DB})
 {DOUBLE}    { return token( CONST_DOUBLE ); }
 {STRING}    { return token( CONST_STRING ); }   
 
+"asm{".*"}"  {  string lexema = trim( yytext + 3, "{}" );
+                yylval.c = tokeniza( lexema );
+                coluna += strlen( yytext ); 
+                yylval.linha = linha;
+                yylval.coluna = coluna;
+                return ASM; }
+"function"  { return token( FUNCTION ); }
 "let"       { return token( LET ); }
 "const"     { return token( CONST ); }
 "var"       { return token( VAR ); }
@@ -53,4 +62,29 @@ int token( int tk ) {
     yylval.linha = linha;
     yylval.coluna = coluna;
     return tk;
+}
+
+string trim( char* original, string chars_para_remover ){
+
+    size_t tam_original = strlen(original);
+    string modificada = "";
+    for (size_t i = 0; i < tam_original; ++i) {
+        if ( chars_para_remover.find(original[i]) == string::npos ) {
+            modificada += original[i];
+        }
+    }
+
+    return modificada;
+}
+
+vector<string> tokeniza( string texto ){
+    vector<string> vetor;
+    istringstream str_stream(texto);
+    string token;
+
+    while (str_stream >> token) {
+        vetor.push_back(token);
+    }
+
+    return vetor;
 }
