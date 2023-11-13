@@ -15,10 +15,14 @@ int linha = 1, coluna = 1;
 struct Atributos {
     vector<string> c; // Código
     int linha = 0, coluna = 0;
+    int contador = 0; // Só para argumentos e parâmetros
+    vector<string> valor_default;
     void clear() {
         c.clear();
         linha = 0;
         coluna = 0;
+        contador = 0;
+        valor_default.clear();
     }
 };
 
@@ -33,7 +37,6 @@ struct Simbolo {
     TipoDecl tipo;
     int linha;
     int coluna;
-    int n_args;
 };
 
 vector< map< string, Simbolo > > ts = { map< string, Simbolo >{} }; // Tabela de símbolos 
@@ -102,12 +105,12 @@ string gera_label( string prefixo ) {
 
 %left '+' '-'
 %left '*' '/' '%'
-%left '['
+%right '[' '('
 %left '.'
 
 %%
 
-S : CMDs {  print( resolve_enderecos( $1.c + "." ) );  }
+S : CMDs {  print( resolve_enderecos( $1.c + "." + funcoes ) );  }
   ;
 
 CMDs : CMDs CMD  { $$.c = $1.c + $2.c; }
@@ -202,7 +205,7 @@ EMPILHA_TS : { ts.push_back( map< string, Simbolo >{} ); }
            ;
     
 CMD_FUNC : FUNCTION ID { declara_var( Var, $2.c[0], $2.linha, $2.coluna ); } 
-             '(' EMPILHA_TS LISTA_ARGs ')' '{' CMDs '}'
+             '(' EMPILHA_TS LISTA_PARAMs ')' '{' CMDs '}'
            { 
              string lbl_endereco_funcao = gera_label( "func_" + $2.c[0] );
              string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
@@ -215,16 +218,35 @@ CMD_FUNC : FUNCTION ID { declara_var( Var, $2.c[0], $2.linha, $2.coluna ); }
            }
          ;
          
-LISTA_ARGs : ARGs
+LISTA_PARAMs : PARAMs
            | { $$.c.clear(); }
            ;
            
-ARGs : ARG ',' ARGs 
-     | ARG 
+PARAMs: PARAM ',' PARAMs
+        { // a & a arguments @ 0 [@] = ^ 
+            $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
+                    + "[@]" + "=" + "^"; 
+                
+         //if( $3.valor_default.size() > 0 ) {
+           // Gerar código para testar valor default.
+         //}
+            $$.contador = $1.contador + $3.contador; 
+        }
+    | PARAM 
+        { // a & a arguments @ 0 [@] = ^ 
+            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^"; 
+                
+        //  if( $1.valor_default.size() > 0 ) {
+            // Gerar código para testar valor default.
+        //  }
+            $$.contador = $1.contador; 
+        }
      ;
      
-ARG : ID
-    | ID '=' E
+PARAM : ID
+        {   $$.c = $1.c;      
+            $$.contador = 1;
+            $$.valor_default.clear(); }
     ;
 
 
@@ -307,6 +329,8 @@ E :   LVALUE '=' E
     | E AND E       { $$.c = $1.c + $3.c + $2.c; }
     | E OR E        { $$.c = $1.c + $3.c + $2.c; }
     | '(' E ')'     { $$.c = $2.c; }
+    | E '(' LISTA_ARGs ')'
+            { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$" + "^"; }
     | '[' ']'       { $$.c = vector<string>{"[]"}; }
     | LVALUE MAIS_MAIS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }
@@ -337,6 +361,18 @@ T   : CONST_INT
     | CONST_STRING
     ;
 
+
+LISTA_ARGs: ARGs
+            | { $$.clear(); }
+            ;
+
+ARGs: ARGs ',' E
+       { $$.c = $1.c + $3.c;
+         $$.contador = $1.contador + $3.contador; }
+    | E
+       { $$.c = $1.c;
+         $$.contador = 1; }
+    ;
 
 %%
 
