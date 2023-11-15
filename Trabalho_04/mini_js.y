@@ -94,7 +94,7 @@ string gera_label( string prefixo ) {
 
 %token ID IF ELSE LET VAR CONST PRINT FOR WHILE
 %token CONST_INT CONST_DOUBLE CONST_STRING
-%token AND OR ME_IG MA_IG DIF IGUAL FUNCTION ASM
+%token AND OR ME_IG MA_IG DIF IGUAL FUNCTION RETURN ASM
 %token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
 
 %right '='
@@ -125,7 +125,8 @@ CMD : CMD_LET   ';'
     | CMD_FOR
     | CMD_WHILE
     | CMD_FUNC
-    | E ASM ';' 	{ $$.c = $1.c + $2.c; }
+    | RETURN E ';'  { $$.c = $2.c + "'&retorno'" + "@" + "~"; }
+    | E ASM ';' 	{ $$.c = $1.c + $2.c + "^"; }
     | PRINT E ';'   { $$.c = $2.c + "print" + "#"; }
     | E ';'         { $$.c = $1.c + "^"; }
     | '{' EMPILHA_TS CMDs '}'  
@@ -330,7 +331,7 @@ E :   LVALUE '=' E
     | E OR E        { $$.c = $1.c + $3.c + $2.c; }
     | '(' E ')'     { $$.c = $2.c; }
     | E '(' LISTA_ARGs ')'
-            { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$" + "^"; }
+            { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$"; }
     | '[' ']'       { $$.c = vector<string>{"[]"}; }
     | LVALUE MAIS_MAIS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }

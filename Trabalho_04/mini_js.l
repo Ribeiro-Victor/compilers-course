@@ -30,6 +30,7 @@ STRING      ({STRING_SNG}|{STRING_DB})
                 yylval.coluna = coluna;
                 return ASM; }
 "function"  { return token( FUNCTION ); }
+"return"    { return token( RETURN ); }
 "let"       { return token( LET ); }
 "const"     { return token( CONST ); }
 "var"       { return token( VAR ); }
