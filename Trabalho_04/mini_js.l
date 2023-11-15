@@ -34,7 +34,7 @@ STRING      ({STRING_SNG}|{STRING_DB})
 "let"       { return token( LET ); }
 "const"     { return token( CONST ); }
 "var"       { return token( VAR ); }
-"print"     { return token( PRINT ); }
+    /* "print"     { return token( PRINT ); } */
 "if"        { return token( IF ); }
 "else"      { return token( ELSE ); }
 "for"       { return token( FOR ); }
@@ -50,6 +50,8 @@ STRING      ({STRING_SNG}|{STRING_DB})
 "-="        { return token( MENOS_IGUAL ); }
 "++"        { return token( MAIS_MAIS ); }
 "--"        { return token( MENOS_MENOS ); }
+"true"      { return token( TRUE ); }
+"false"     { return token( FALSE ); }
 
 {ID}        { return token( ID ); }
 

@@ -96,7 +96,7 @@ string gera_label( string prefixo ) {
 %token ID IF ELSE LET VAR CONST PRINT FOR WHILE
 %token CONST_INT CONST_DOUBLE CONST_STRING
 %token AND OR ME_IG MA_IG DIF IGUAL FUNCTION RETURN ASM
-%token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
+%token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS TRUE FALSE
 
 %right '='
 %right ELSE ')'
@@ -128,7 +128,7 @@ CMD : CMD_LET   ';'
     | CMD_FUNC
     | RETURN E ';'  { $$.c = $2.c + "'&retorno'" + "@" + "~"; }
     | E ASM ';' 	{ $$.c = $1.c + $2.c + "^"; }
-    | PRINT E ';'   { $$.c = $2.c + "print" + "#"; }
+    /* | PRINT E ';'   { $$.c = $2.c + "print" + "#"; } */
     | E ';'         { $$.c = $1.c + "^"; }
     | '{' EMPILHA_TS CMDs '}'  
         {   ts.pop_back();
@@ -320,6 +320,8 @@ E :   LVALUE '=' E
         { checa_simbolo( $1.c[0], true ); $$.c = $1.c + "{}" + "="; }
     | LVALUEPROP '=' E 
         {  $$.c = $1.c + $3.c + "[=]"; }
+    | LVALUEPROP '=' '{' '}'
+        {  $$.c = $1.c + "{}" + "[=]"; }
     | E '<' E       { $$.c = $1.c + $3.c + $2.c; }
     | E '>' E       { $$.c = $1.c + $3.c + $2.c; }
     | E '+' E       { $$.c = $1.c + $3.c + $2.c; }
@@ -333,6 +335,8 @@ E :   LVALUE '=' E
     | E DIF E       { $$.c = $1.c + $3.c + $2.c; }
     | E AND E       { $$.c = $1.c + $3.c + $2.c; }
     | E OR E        { $$.c = $1.c + $3.c + $2.c; }
+    | TRUE          { $$.c = $1.c; }
+    | FALSE          { $$.c = $1.c; }
     | '(' E ')'     { $$.c = $2.c; }
     | E '(' LISTA_ARGs ')'
             { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$"; }
