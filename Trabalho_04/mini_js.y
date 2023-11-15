@@ -10,7 +10,8 @@ using namespace std;
 void yyerror(const char *);
 void print( vector<string> s );
 
-int linha = 1, coluna = 1; 
+int linha = 1, coluna = 1;
+int count_params = 0;
 
 struct Atributos {
     vector<string> c; // Código
@@ -223,10 +224,13 @@ LISTA_PARAMs : PARAMs
            | { $$.c.clear(); }
            ;
            
-PARAMs: PARAM ',' PARAMs
-        { // a & a arguments @ 0 [@] = ^ 
-            $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
-                    + "[@]" + "=" + "^"; 
+PARAMs: PARAM ',' {count_params++;} PARAMs
+        { // a & a arguments @ 0 [@] = ^
+            
+            // $$.c = $1.c + $3.c + "&" + "arguments" + "@" + to_string( $3.contador )
+            //         + "[@]" + "=" + "^"; 
+            count_params--;
+            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(count_params) + "[@]" + "=" + "^" + $4.c; 
                 
          //if( $3.valor_default.size() > 0 ) {
            // Gerar código para testar valor default.
@@ -234,8 +238,8 @@ PARAMs: PARAM ',' PARAMs
             $$.contador = $1.contador + $3.contador; 
         }
     | PARAM 
-        { // a & a arguments @ 0 [@] = ^ 
-            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^"; 
+        { // a & a arguments @ 0 [@] = ^
+            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(count_params) + "[@]" + "=" + "^"; 
                 
         //  if( $1.valor_default.size() > 0 ) {
             // Gerar código para testar valor default.
@@ -369,7 +373,7 @@ LISTA_ARGs: ARGs
 
 ARGs: ARGs ',' E
        { $$.c = $1.c + $3.c;
-         $$.contador = $1.contador + $3.contador; }
+         $$.contador += 1; }
     | E
        { $$.c = $1.c;
          $$.contador = 1; }
