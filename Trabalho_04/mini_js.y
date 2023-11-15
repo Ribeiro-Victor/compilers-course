@@ -399,7 +399,6 @@ vector<string> declara_var( TipoDecl tipo, string nome, int linha, int coluna ) 
 }
 
 void checa_simbolo( string nome, bool modificavel ) {
-
     for( int i = ts.size() - 1; i >= 0; i-- ) {  
         auto& atual = ts[i];
 
@@ -408,9 +407,8 @@ void checa_simbolo( string nome, bool modificavel ) {
             cerr << "Erro: a variável '" << nome << "' não pode ser modificada." << endl;
             exit( 1 );     
             }
-        }
-        else {
-            return;   
+            else 
+                return;
         }
     }
     cerr << "Erro: a variável '" << nome << "' não foi declarada." << endl;
