@@ -99,7 +99,6 @@ string gera_label( string prefixo ) {
 %token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS TRUE FALSE
 
 %right '='
-%right ELSE ')'
 
 %nonassoc '<' '>' ME_IG MA_IG DIF IGUAL AND OR
 %nonassoc MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
@@ -221,17 +220,15 @@ CMD_FUNC : FUNCTION ID { declara_var( Var, $2.c[0], $2.linha, $2.coluna ); }
          ;
          
 LISTA_PARAMs : PARAMs
-           | { $$.c.clear(); }
+           | { $$.clear(); }
            ;
            
-PARAMs: PARAM ',' {count_params++;} PARAMs
+PARAMs: PARAMs ',' PARAM
         { // a & a arguments @ 0 [@] = ^
             
-            // $$.c = $1.c + $3.c + "&" + "arguments" + "@" + to_string( $3.contador )
-            //         + "[@]" + "=" + "^"; 
-            count_params--;
-            declara_var( Let, $1.c[0], $1.linha, $1.coluna );
-            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(count_params) + "[@]" + "=" + "^" + $4.c; 
+            $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
+                + "[@]" + "=" + "^";  
+            
                 
          //if( $3.valor_default.size() > 0 ) {
            // Gerar código para testar valor default.
@@ -240,12 +237,12 @@ PARAMs: PARAM ',' {count_params++;} PARAMs
         }
     | PARAM 
         { // a & a arguments @ 0 [@] = ^
-            declara_var( Let, $1.c[0], $1.linha, $1.coluna );
-            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(count_params) + "[@]" + "=" + "^"; 
+            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^"; 
                 
-        //  if( $1.valor_default.size() > 0 ) {
+         if( $1.valor_default.size() > 0 ) {
+            cout << $1.c[0] << " tem valor default -> " << $1.valor_default[0] << endl;
             // Gerar código para testar valor default.
-        //  }
+         }
             $$.contador = $1.contador; 
         }
      ;
@@ -253,7 +250,16 @@ PARAMs: PARAM ',' {count_params++;} PARAMs
 PARAM : ID
         {   $$.c = $1.c;      
             $$.contador = 1;
-            $$.valor_default.clear(); }
+            $$.valor_default.clear(); 
+            declara_var( Let, $1.c[0], $1.linha, $1.coluna ); }
+      | ID '=' E
+        { 
+            // Código do IF
+            $$.c = $1.c;
+            $$.contador = 1;
+            $$.valor_default = $3.c;         
+            declara_var( Let, $1.c[0], $1.linha, $1.coluna ); 
+        }
     ;
 
 
