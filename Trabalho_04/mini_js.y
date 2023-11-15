@@ -230,6 +230,7 @@ PARAMs: PARAM ',' {count_params++;} PARAMs
             // $$.c = $1.c + $3.c + "&" + "arguments" + "@" + to_string( $3.contador )
             //         + "[@]" + "=" + "^"; 
             count_params--;
+            declara_var( Let, $1.c[0], $1.linha, $1.coluna );
             $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(count_params) + "[@]" + "=" + "^" + $4.c; 
                 
          //if( $3.valor_default.size() > 0 ) {
@@ -239,6 +240,7 @@ PARAMs: PARAM ',' {count_params++;} PARAMs
         }
     | PARAM 
         { // a & a arguments @ 0 [@] = ^
+            declara_var( Let, $1.c[0], $1.linha, $1.coluna );
             $$.c = $1.c + "&" + $1.c + "arguments" + "@" + to_string(count_params) + "[@]" + "=" + "^"; 
                 
         //  if( $1.valor_default.size() > 0 ) {
