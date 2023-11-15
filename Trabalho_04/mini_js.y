@@ -66,6 +66,11 @@ vector<string> operator+( vector<string> a, string b ) {
     return a;
 }
 
+vector<string> operator+=( vector<string>& a, string b ) {
+    a.push_back( b );
+    return a;
+}
+
 vector<string> operator+( string a, vector<string> b ) {
     return vector<string>{ a } + b;
 }
@@ -224,25 +229,43 @@ LISTA_PARAMs : PARAMs
            ;
            
 PARAMs: PARAMs ',' PARAM
-        { // a & a arguments @ 0 [@] = ^
-            
+        {   // a & a arguments @ 0 [@] = ^
             $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
                 + "[@]" + "=" + "^";  
-            
                 
-         //if( $3.valor_default.size() > 0 ) {
-           // Gerar código para testar valor default.
-         //}
+            if( $3.valor_default.size() > 0 ) {
+                // Gerar código para testar valor default.
+                string lbl_true = gera_label( "lbl_true" );
+                string lbl_fim_if = gera_label( "lbl_fim_if" );
+                string definicao_lbl_true = ":" + lbl_true;
+                string definicao_lbl_fim_if = ":" + lbl_fim_if;
+                            
+                $$.c = $$.c + 
+                    $3.c + "@" + "undefined" + "@" + "==" +     // Codigo da expressão
+                    lbl_true + "?" +                            // Código do IF
+                    lbl_fim_if + "#" +                          // Código do False
+                    definicao_lbl_true + $3.c + $3.valor_default + "=" + "^" + // Código do True
+                    definicao_lbl_fim_if;         // Fim do IF
+            }
             $$.contador = $1.contador + $3.contador; 
         }
     | PARAM 
-        { // a & a arguments @ 0 [@] = ^
-            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^"; 
+        {
+            $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^";
                 
-         if( $1.valor_default.size() > 0 ) {
-            cout << $1.c[0] << " tem valor default -> " << $1.valor_default[0] << endl;
-            // Gerar código para testar valor default.
-         }
+            if( $1.valor_default.size() > 0 ) {
+                string lbl_true = gera_label( "lbl_true" );
+                string lbl_fim_if = gera_label( "lbl_fim_if" );
+                string definicao_lbl_true = ":" + lbl_true;
+                string definicao_lbl_fim_if = ":" + lbl_fim_if;
+                            
+                $$.c = $$.c + 
+                    $1.c + "@" + "undefined" + "@" + "==" +     // Codigo da expressão
+                    lbl_true + "?" +                            // Código do IF
+                    lbl_fim_if + "#" +                          // Código do False
+                    definicao_lbl_true + $1.c + $1.valor_default + "=" + "^" + // Código do True
+                    definicao_lbl_fim_if;         // Fim do IF
+            }
             $$.contador = $1.contador; 
         }
      ;
@@ -254,13 +277,12 @@ PARAM : ID
             declara_var( Let, $1.c[0], $1.linha, $1.coluna ); }
       | ID '=' E
         { 
-            // Código do IF
             $$.c = $1.c;
             $$.contador = 1;
             $$.valor_default = $3.c;         
             declara_var( Let, $1.c[0], $1.linha, $1.coluna ); 
         }
-    ;
+      ;
 
 
 
@@ -384,10 +406,13 @@ LISTA_ARGs: ARGs
             ;
 
 ARGs: ARGs ',' E
-       { $$.c = $1.c + $3.c;
+        { $$.c = $1.c + $3.c;
          $$.contador += 1; }
+    | ARGs ',' '{' '}'
+        { $$.c = $1.c + "{}"; 
+          $$.contador += 1;}
     | E
-       { $$.c = $1.c;
+        { $$.c = $1.c;
          $$.contador = 1; }
     ;
 
