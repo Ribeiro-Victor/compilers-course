@@ -387,7 +387,8 @@ E :   LVALUE '=' E
     | '(' E ')'     { $$.c = $2.c; }
     | E '(' LISTA_ARGs ')'
             { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$"; }
-    | '[' ']'       { $$.c = vector<string>{"[]"}; }
+    | '[' ELEMENTOS_ARRAY ']'
+        { $$.c = vector<string>{"[]"} + $2.c; }
     | LVALUE MAIS_MAIS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }
     | LVALUE MENOS_MENOS
@@ -432,6 +433,18 @@ ARGs: ARGs ',' E
         { $$.c = $1.c;
          $$.contador = 1; }
     ;
+
+ELEMENTOS_ARRAY : ELEMENTOs
+                | { $$.clear(); }
+                ;
+
+ELEMENTOs: ELEMENTOs ',' E
+            { $$.c = $1.c + to_string( $$.contador ) + $3.c + "[<=]"; 
+              $$.contador += 1;}
+         | E
+            { $$.c = to_string( $$.contador ) + $1.c + "[<=]"; 
+              $$.contador += 1; }
+         ;
 
 %%
 
