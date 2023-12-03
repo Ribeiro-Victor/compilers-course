@@ -332,9 +332,9 @@ VAR_VAR : ID
         | ID '=' E
             { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) + 
                      $1.c + $3.c + "=" + "^"; }
-        | ID '=' '{' '}'
+        | ID '=' OBJ
             { $$.c = declara_var( Var, $1.c[0], $1.linha, $1.coluna ) +
-                     $1.c + "{}" + "=" + "^"; }
+                     $1.c + $3.c + "=" + "^"; }
         ;
 
 CMD_CONST   : CONST CONST_VARs { $$.c = $2.c; }
@@ -348,9 +348,9 @@ CONST_VAR   :
             | ID '=' E
                 { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) + 
                         $1.c + $3.c + "=" + "^"; }
-            | ID '=' '{' '}'
-                { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
-                        $1.c + "{}" + "=" + "^"; }
+            | ID '=' OBJ
+            { $$.c = declara_var( Const, $1.c[0], $1.linha, $1.coluna ) +
+                     $1.c + $3.c + "=" + "^"; }
             ;
 
 
@@ -363,14 +363,12 @@ LVALUEPROP : E '[' E ']'    { $$.c = $1.c + $3.c; }
 
 E :   LVALUE '=' E 
         { checa_simbolo( $1.c[0], true ); $$.c = $1.c + $3.c + "="; }
-    | LVALUE '=' '{' '}'
-        { checa_simbolo( $1.c[0], true ); $$.c = $1.c + "{}" + "="; }
-    /* | LVALUE '=' '{' CAMPOs '}' */
-        { checa_simbolo( $1.c[0], true ); $$.c = $1.c + "{}" + "="; }
+    | LVALUE '=' OBJ
+        { checa_simbolo( $1.c[0], true ); $$.c = $1.c + $3.c + "="; }
     | LVALUEPROP '=' E 
         {  $$.c = $1.c + $3.c + "[=]"; }
-    | LVALUEPROP '=' '{' '}'
-        {  $$.c = $1.c + "{}" + "[=]"; }
+    | LVALUEPROP '=' OBJ
+        {  $$.c = $1.c + $3.c + "[=]"; }
     | E '<' E       { $$.c = $1.c + $3.c + $2.c; }
     | E '>' E       { $$.c = $1.c + $3.c + $2.c; }
     | E '+' E       { $$.c = $1.c + $3.c + $2.c; }
