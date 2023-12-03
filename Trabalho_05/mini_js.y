@@ -285,6 +285,23 @@ PARAM : ID
       ;
 
 
+CAMPOs  : CAMPO ',' CAMPOs
+            { $$.c = $1.c + "[<=]" + $3.c; }
+        | CAMPO
+            { $$.c = $1.c + "[<=]"; }
+        ;
+
+CAMPO   : ID ':' E
+            { $$.c = $1.c + $3.c; }
+        | ID ':' OBJ
+            { $$.c = $1.c + $3.c; }
+        ;
+
+OBJ : '{' CAMPOs '}'
+        { $$.c = vector<string>{"{}"} + $2.c; }
+    | '{' '}'
+        { $$.c = vector<string>{"{}"}; }
+    ;
 
 CMD_LET : LET LET_VARs { $$.c = $2.c; }
         ;
@@ -298,9 +315,9 @@ LET_VAR : ID
         | ID '=' E
             { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) + 
                      $1.c + $3.c + "=" + "^"; }
-        | ID '=' '{' '}'
+        | ID '=' OBJ
             { $$.c = declara_var( Let, $1.c[0], $1.linha, $1.coluna ) +
-                     $1.c + "{}" + "=" + "^"; }
+                     $1.c + $3.c + "=" + "^"; }
         ;
 
 CMD_VAR : VAR VAR_VARs { $$.c = $2.c; }
@@ -347,6 +364,8 @@ LVALUEPROP : E '[' E ']'    { $$.c = $1.c + $3.c; }
 E :   LVALUE '=' E 
         { checa_simbolo( $1.c[0], true ); $$.c = $1.c + $3.c + "="; }
     | LVALUE '=' '{' '}'
+        { checa_simbolo( $1.c[0], true ); $$.c = $1.c + "{}" + "="; }
+    /* | LVALUE '=' '{' CAMPOs '}' */
         { checa_simbolo( $1.c[0], true ); $$.c = $1.c + "{}" + "="; }
     | LVALUEPROP '=' E 
         {  $$.c = $1.c + $3.c + "[=]"; }
