@@ -223,6 +223,18 @@ CMD_FUNC : FUNCTION ID { declara_var( Var, $2.c[0], $2.linha, $2.coluna ); }
              ts.pop_back(); 
            }
          ;
+
+FUNC_ANONIMA: FUNCTION '(' EMPILHA_TS LISTA_PARAMs ')' '{' CMDs '}'
+              {
+                string lbl_endereco_funcao = gera_label( "func_anonima" );
+                string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+
+                $$.c = vector<string>{"{}"} + "'&funcao'" + lbl_endereco_funcao + "[<=]";
+                funcoes = funcoes + definicao_lbl_endereco_funcao + $4.c + $7.c +
+                       "undefined" + "@" + "'&retorno'" + "@"+ "~";
+                ts.pop_back(); 
+              }
+            ;
          
 LISTA_PARAMs : PARAMs
            | { $$.clear(); }
@@ -383,12 +395,8 @@ E :   LVALUE '=' E
     | E AND E       { $$.c = $1.c + $3.c + $2.c; }
     | E OR E        { $$.c = $1.c + $3.c + $2.c; }
     | TRUE          { $$.c = $1.c; }
-    | FALSE          { $$.c = $1.c; }
+    | FALSE         { $$.c = $1.c; }
     | '(' E ')'     { $$.c = $2.c; }
-    | E '(' LISTA_ARGs ')'
-            { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$"; }
-    | '[' ELEMENTOS_ARRAY ']'
-        { $$.c = vector<string>{"[]"} + $2.c; }
     | LVALUE MAIS_MAIS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }
     | LVALUE MENOS_MENOS
@@ -409,6 +417,12 @@ E :   LVALUE '=' E
         { $$.c = $1.c + "@"; }
     | LVALUEPROP 
         { $$.c = $1.c + "[@]"; }
+    | E '(' LISTA_ARGs ')'
+        { $$.c = $3.c + to_string( $3.contador ) + $1.c + "$"; }
+    | '[' ELEMENTOS_ARRAY ']'
+        { $$.c = vector<string>{"[]"} + $2.c; }
+    | FUNC_ANONIMA
+        { $$.c = $1.c; }
     | '-' T         { $$.c = "0" + $2.c + $1.c; }
     | T
     ;
