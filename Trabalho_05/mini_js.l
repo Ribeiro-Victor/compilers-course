@@ -39,6 +39,10 @@ STRING      ({STRING_SNG}|{STRING_DB})
 "else"      { return token( ELSE ); }
 "for"       { return token( FOR ); }
 "while"     { return token( WHILE ); }
+"=>"        { return token(SETA); }
+")"/.*"=>"  { return token(PARENTESES_FUNCAO); }
+
+"=>"[ \n\s\t]*"{"  { return token(SETA_CHAVES); }
 
 "&&"        { return token( AND ); }
 "||"        { return token( OR ); }

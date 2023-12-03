@@ -98,12 +98,12 @@ string gera_label( string prefixo ) {
 
 %}
 
-%token ID IF ELSE LET VAR CONST PRINT FOR WHILE
+%token ID IF ELSE LET VAR CONST PRINT FOR WHILE SETA PARENTESES_FUNCAO SETA_CHAVES
 %token CONST_INT CONST_DOUBLE CONST_STRING
 %token AND OR ME_IG MA_IG DIF IGUAL FUNCTION RETURN ASM
 %token MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS TRUE FALSE
 
-%right '='
+%right '=' SETA
 
 %nonassoc '<' '>' ME_IG MA_IG DIF IGUAL AND OR
 %nonassoc MAIS_IGUAL MENOS_IGUAL MAIS_MAIS MENOS_MENOS
@@ -131,6 +131,7 @@ CMD : CMD_LET   ';'
     | CMD_WHILE
     | CMD_FUNC
     | RETURN E ';'  { $$.c = $2.c + "'&retorno'" + "@" + "~"; }
+    | RETURN OBJ ';'{ $$.c = $2.c + "'&retorno'" + "@" + "~"; }
     | E ASM ';' 	{ $$.c = $1.c + $2.c + "^"; }
     /* | PRINT E ';'   { $$.c = $2.c + "print" + "#"; } */
     | E ';'         { $$.c = $1.c + "^"; }
@@ -423,13 +424,42 @@ E :   LVALUE '=' E
         { $$.c = vector<string>{"[]"} + $2.c; }
     | FUNC_ANONIMA
         { $$.c = $1.c; }
-    | '-' T         { $$.c = "0" + $2.c + $1.c; }
+    | ID EMPILHA_TS { declara_var( Let, $1.c[0], $1.linha, $1.coluna ); } SETA E 
+        { 
+            string lbl_endereco_funcao = gera_label( "func_seta" );
+            string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+            vector<string>arg =  $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^";
+            $$.c = vector<string>{"{}"} + "'&funcao'" + lbl_endereco_funcao + "[<=]";
+            funcoes = funcoes + definicao_lbl_endereco_funcao + arg + $5.c + "'&retorno'" + "@" + "~";
+            ts.pop_back(); 
+        }
+    | '('  LISTA_PARAMs PARENTESES_FUNCAO SETA E 
+        { 
+            string lbl_endereco_funcao = gera_label( "func_seta" );
+            string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+            vector<string>arg = $2.c;
+            $$.c = vector<string>{"{}"} + "'&funcao'" + lbl_endereco_funcao + "[<=]";
+            funcoes = funcoes + definicao_lbl_endereco_funcao + arg + $5.c + "'&retorno'" + "@" + "~";
+            ts.pop_back(); 
+        }
+    | ID EMPILHA_TS { declara_var( Let, $1.c[0], $1.linha, $1.coluna ); } SETA_CHAVES CMDs '}'
+    { 
+      string lbl_endereco_funcao = gera_label( "funcanon" );
+      string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
+      vector<string>arg =  $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^";
+      $$.c = vector<string>{"{}"} + "'&funcao'" + lbl_endereco_funcao + "[<=]";
+      funcoes = funcoes + definicao_lbl_endereco_funcao + arg + $5.c;
+      ts.pop_back(); 
+    }
+    | '-' T
+        { $$.c = "0" + $2.c + $1.c; }
     | T
     ;
 
 T   : CONST_INT
     | CONST_DOUBLE
     | CONST_STRING
+    | '(' OBJ ')'
     ;
 
 
@@ -456,6 +486,12 @@ ELEMENTOs: ELEMENTOs ',' E
             { $$.c = $1.c + to_string( $$.contador ) + $3.c + "[<=]"; 
               $$.contador += 1;}
          | E
+            { $$.c = to_string( $$.contador ) + $1.c + "[<=]"; 
+              $$.contador += 1; }
+         | ELEMENTOs ',' OBJ
+            { $$.c = $1.c + to_string( $$.contador ) + $3.c + "[<=]"; 
+              $$.contador += 1;}
+         | OBJ
             { $$.c = to_string( $$.contador ) + $1.c + "[<=]"; 
               $$.contador += 1; }
          ;
