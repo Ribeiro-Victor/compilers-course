@@ -377,16 +377,16 @@ CONST_VAR   :
             ;
 
 
-LVALUE : ID 
-       ;
+/* LVALUE : ID 
+       ; */
 
 LVALUEPROP : E '[' E ']'    { $$.c = $1.c + $3.c; }
            | E '.' ID       { $$.c = $1.c + $3.c; }
            ;
 
-E :   LVALUE '=' E 
+E :   ID '=' E 
         { checa_simbolo( $1.c[0], true ); $$.c = $1.c + $3.c + "="; }
-    | LVALUE '=' OBJ
+    | ID '=' OBJ
         { checa_simbolo( $1.c[0], true ); $$.c = $1.c + $3.c + "="; }
     | LVALUEPROP '=' E 
         {  $$.c = $1.c + $3.c + "[=]"; }
@@ -408,14 +408,14 @@ E :   LVALUE '=' E
     | TRUE          { $$.c = $1.c; }
     | FALSE         { $$.c = $1.c; }
     | '(' E ')'     { $$.c = $2.c; }
-    | LVALUE MAIS_MAIS
+    | ID MAIS_MAIS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "+" + "=" + "^"; }
-    | LVALUE MENOS_MENOS
+    | ID MENOS_MENOS
             { $$.c = $1.c + "@" + $1.c + $1.c + "@" + "1" + "-" + "=" + "^"; }
-    | LVALUE MAIS_IGUAL E 
+    | ID MAIS_IGUAL E 
             { $$.c = $1.c + $1.c + "@" + $3.c + "+" + "=" ; }
-    | LVALUE MENOS_IGUAL E 
-            { $$.c = $1.c + $1.c + "@" + $3.c + "-" + "=" ; }
+    | ID MENOS_IGUAL E 
+            { $$.c = $1.c + $1.c + "@" + $3.c + "-" + "=" ; } 
     | LVALUEPROP MAIS_MAIS
             { $$.c = $1.c + "[@]" + $1.c + $1.c + "[@]" + "1" + "+" + "[=]" + "^"; }
     | LVALUEPROP MENOS_MENOS
@@ -424,8 +424,8 @@ E :   LVALUE '=' E
             { $$.c = $1.c + $1.c + "[@]" + $3.c + "+" + "[=]" ; }
     | LVALUEPROP MENOS_IGUAL E 
             { $$.c = $1.c + $1.c + "[@]" + $3.c + "-" + "[=]" ; }
-    | LVALUE 
-        { $$.c = $1.c + "@"; }
+    /* | LVALUE 
+        { $$.c = $1.c + "@"; } */
     | LVALUEPROP 
         { $$.c = $1.c + "[@]"; }
     | E '(' LISTA_ARGs ')'
@@ -444,13 +444,14 @@ E :   LVALUE '=' E
             ts.pop_back();
             dentro_da_funcao -= 1;
         }
-    | '('  EMPILHA_TS LISTA_PARAMs { dentro_da_funcao += 1; } PARENTESES_FUNCAO SETA E 
+    | '(' LISTA_PARAMs { dentro_da_funcao += 1; } PARENTESES_FUNCAO SETA E 
         { 
+            ts.push_back( map< string, Simbolo >{} ); 
             string lbl_endereco_funcao = gera_label( "func_seta" );
             string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
             vector<string>arg = $2.c;
             $$.c = vector<string>{"{}"} + "'&funcao'" + lbl_endereco_funcao + "[<=]";
-            funcoes = funcoes + definicao_lbl_endereco_funcao + arg + $7.c + "'&retorno'" + "@" + "~";
+            funcoes = funcoes + definicao_lbl_endereco_funcao + arg + $6.c + "'&retorno'" + "@" + "~";
             ts.pop_back();
             dentro_da_funcao -= 1; 
         }
@@ -473,6 +474,7 @@ T   : CONST_INT
     | CONST_DOUBLE
     | CONST_STRING
     | '(' OBJ ')'
+    | ID { checa_simbolo( $1.c[0], false ); $$.c = $1.c + "@"; } 
     ;
 
 
