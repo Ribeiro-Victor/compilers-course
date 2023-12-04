@@ -40,7 +40,7 @@ STRING      ({STRING_SNG}|{STRING_DB})
 "for"       { return token( FOR ); }
 "while"     { return token( WHILE ); }
 "=>"        { return token(SETA); }
-")"/.*"=>"  { return token(PARENTESES_FUNCAO); }
+")"/(.)*"=>"  { return token(PARENTESES_FUNCAO); }
 
 "=>"[ \n\s\t]*"{"  { return token(SETA_CHAVES); }
 
