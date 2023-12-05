@@ -248,11 +248,13 @@ FUNC_ANONIMA: FUNCTION '(' EMPILHA_TS { dentro_da_funcao += 1; } LISTA_PARAMs ')
             ;
          
 LISTA_PARAMs : PARAMs
-           | { $$.clear(); }
+           | EMPILHA_TS { $$.clear(); }
            ;
            
 PARAMs: PARAMs ',' PARAM
         {   // a & a arguments @ 0 [@] = ^
+            declara_var( Let, $3.c[0], $3.linha, $3.coluna );
+
             $$.c = $1.c + $3.c + "&" + $3.c + "arguments" + "@" + to_string( $1.contador )
                 + "[@]" + "=" + "^";  
                 
@@ -274,8 +276,10 @@ PARAMs: PARAMs ',' PARAM
         }
     | PARAM 
         {
+            ts.push_back( map< string, Simbolo >{} ); 
+            declara_var( Let, $1.c[0], $1.linha, $1.coluna );
+            
             $$.c = $1.c + "&" + $1.c + "arguments" + "@" + "0" + "[@]" + "=" + "^";
-                
             if( $1.valor_default.size() > 0 ) {
                 string lbl_true = gera_label( "lbl_true" );
                 string lbl_fim_if = gera_label( "lbl_fim_if" );
@@ -296,14 +300,12 @@ PARAMs: PARAMs ',' PARAM
 PARAM : ID
         {   $$.c = $1.c;      
             $$.contador = 1;
-            $$.valor_default.clear(); 
-            declara_var( Let, $1.c[0], $1.linha, $1.coluna ); }
+            $$.valor_default.clear();  }
       | ID '=' E
         { 
             $$.c = $1.c;
             $$.contador = 1;
             $$.valor_default = $3.c;         
-            declara_var( Let, $1.c[0], $1.linha, $1.coluna ); 
         }
       ;
 
@@ -446,7 +448,6 @@ E :   ID '=' E
         }
     | '(' LISTA_PARAMs { dentro_da_funcao += 1; } PARENTESES_FUNCAO SETA E 
         { 
-            ts.push_back( map< string, Simbolo >{} ); 
             string lbl_endereco_funcao = gera_label( "func_seta" );
             string definicao_lbl_endereco_funcao = ":" + lbl_endereco_funcao;
             vector<string>arg = $2.c;

@@ -1,0 +1,4 @@
+let f = (x,a=y=>9) => (y,b) => y;
+let b = f(9);
+let c = b(7);
+let d = f( 8.1 )( 7.1 );
